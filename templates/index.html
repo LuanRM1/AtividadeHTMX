@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard de Controle do Robô</title>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.6.1"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        width: 80%;
+        margin: auto;
+        overflow: hidden;
+      }
+      .logs,
+      .commands {
+        margin-top: 20px;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Dashboard de Controle do Robô</h1>
+
+      <div id="connect">
+        {% if not robot_connected %}
+        <button
+          hx-get="/connect-robot"
+          hx-trigger="click"
+          hx-target="#connect"
+          hx-swap="outerHTML"
+        >
+          Conectar ao Robô
+        </button>
+        {% endif %}
+      </div>
+
+      <div
+        id="command-form"
+        class="commands {% if not robot_connected %}hidden{% endif %}"
+      >
+        <form
+          id="send-command-form"
+          hx-post="/send-command"
+          hx-target="#command-response"
+          hx-swap="outerHTML"
+          hx-indicator="#command-form"
+        >
+          <input
+            type="text"
+            id="command-input"
+            name="command"
+            placeholder="Digite seu comando aqui"
+            {%
+            if
+            not
+            robot_connected
+            %}disabled{%
+            endif
+            %}
+            required
+          />
+          <button type="submit" hx-trigger="click">Enviar Comando</button>
+        </form>
+      </div>
+
+      <div id="command-response"></div>
+
+      <div id="logs" class="logs">
+        <h2>Logs dos Comandos</h2>
+        <ul>
+          {% for log in logs %}
+          <li>{{ log.command }} - {{ log.status }}</li>
+          {% else %}
+          <li>Nenhum log encontrado</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      document.body.addEventListener("htmx:afterSwap", function (event) {
+        if (
+          event.target.id === "connect" ||
+          event.target.id === "command-response"
+        ) {
+          var commandInput = document.getElementById("command-input");
+          if (commandInput) {
+            commandInput.removeAttribute("disabled");
+          }
+        }
+      });
+
+      document.body.addEventListener("htmx:responseError", function (event) {
+        if (event.detail.target.id === "send-command-form") {
+          document
+            .getElementById("command-input")
+            .setAttribute("disabled", "disabled");
+        }
+      });
+    </script>
+  </body>
+</html>
